@@ -1,0 +1,107 @@
+<h2>Design: Technical Architecture</h2>
+<p class="subtitle">Next.js full-stack — one Docker container, no database, stateless by design</p>
+
+<div class="section">
+  <h3>How the Share Code Works</h3>
+  <div class="mockup">
+    <div class="mockup-header">Share Code Lifecycle</div>
+    <div class="mockup-body" style="padding:16px; font-size:12px; line-height:2;">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#1e3a5f; border:1px solid #2563eb; border-radius:6px; padding:8px 12px; min-width:180px; color:#93c5fd; font-size:11px;">
+            User 1 clicks map<br>
+            <span style="color:#475569;">Sets tolerance + hint</span>
+          </div>
+          <div style="color:#475569;">→</div>
+          <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:8px 12px; min-width:200px; color:#94a3b8; font-size:11px;">
+            <span style="color:#fbbf24;">POST /api/create-game</span><br>
+            Server encrypts payload with<br>AES-256-GCM + app secret key<br>
+            <span style="color:#475569;">(env var in Docker)</span>
+          </div>
+          <div style="color:#475569;">→</div>
+          <div style="background:#0f172a; border:1px dashed #fbbf24; border-radius:6px; padding:8px 12px; color:#fbbf24; font-size:13px; font-family:monospace; letter-spacing:1px;">
+            FTT-X7K2-9MQP
+          </div>
+        </div>
+
+        <div style="color:#475569; font-size:11px; padding-left:4px;">↓ User 1 shares code via text/Discord/etc.</div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#1a2e1a; border:1px solid #16a34a; border-radius:6px; padding:8px 12px; min-width:180px; color:#86efac; font-size:11px;">
+            User 2 enters code<br>
+            <span style="color:#475569;">on their own Docker instance</span>
+          </div>
+          <div style="color:#475569;">→</div>
+          <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:8px 12px; min-width:200px; color:#94a3b8; font-size:11px;">
+            <span style="color:#fbbf24;">POST /api/guess</span><br>
+            Code + guess coords sent up.<br>Server decrypts code → computes<br>Haversine distance → returns<br><strong style="color:#34d399;">distance only</strong>
+          </div>
+          <div style="color:#475569;">→</div>
+          <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:8px 12px; color:#34d399; font-size:12px;">
+            "0.6 miles away"<br>
+            <span style="color:#475569; font-size:10px;">coords never leave server</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>API Routes (3 total)</h3>
+  <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
+    <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:10px 14px;">
+      <span style="color:#fbbf24; font-family:monospace;">POST /api/create-game</span>
+      <span style="color:#475569; margin-left:12px;">Receives: lat, lng, tolerance, hint, hintAfterGuesses → Returns: share code</span>
+    </div>
+    <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:10px 14px;">
+      <span style="color:#fbbf24; font-family:monospace;">POST /api/guess</span>
+      <span style="color:#475569; margin-left:12px;">Receives: shareCode, guessLat, guessLng → Returns: distance, isWin, isHintUnlocked, hint (if unlocked)</span>
+    </div>
+    <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:10px 14px;">
+      <span style="color:#fbbf24; font-family:monospace;">POST /api/reveal</span>
+      <span style="color:#475569; margin-left:12px;">Receives: shareCode → Returns: treasure lat/lng (only called on win, loss, or give up)</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>State Management — No Database Needed</h3>
+  <div style="display:flex; gap:12px; font-size:12px;">
+    <div style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; padding:12px;">
+      <div style="color:#64748b; font-size:10px; text-transform:uppercase; margin-bottom:8px;">Server (stateless)</div>
+      <ul style="color:#94a3b8; margin:0; padding-left:16px; line-height:2;">
+        <li>Encrypts/decrypts share codes</li>
+        <li>Computes distances</li>
+        <li>No session, no DB</li>
+        <li>Secret key in <code style="color:#fbbf24;">APP_SECRET</code> env var</li>
+      </ul>
+    </div>
+    <div style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; padding:12px;">
+      <div style="color:#64748b; font-size:10px; text-transform:uppercase; margin-bottom:8px;">Browser (localStorage)</div>
+      <ul style="color:#94a3b8; margin:0; padding-left:16px; line-height:2;">
+        <li>Share code (for re-sending with each guess)</li>
+        <li>All previous guesses + distances</li>
+        <li>Unit preference</li>
+        <li>Circle overlay toggle state</li>
+        <li>Hint unlocked flag</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Docker Setup</h3>
+  <div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:12px; font-size:12px; color:#94a3b8; font-family:monospace; line-height:1.8;">
+    <span style="color:#475569;"># Single container, single port</span><br>
+    FROM node:20-alpine<br>
+    EXPOSE 3000<br>
+    ENV APP_SECRET=<span style="color:#fbbf24;">change-this-secret</span><br>
+    <span style="color:#475569;"># Both users must use the same APP_SECRET to share codes</span>
+  </div>
+  <p style="color:#64748b; font-size:11px; margin-top:8px;">⚠️ Both User 1 and User 2 must run Docker with the same <code>APP_SECRET</code> — this is what allows the code to be decrypted. Share it once at setup time (like a household Wi-Fi password).</p>
+</div>
+
+<p style="color:#475569; font-size:12px; margin-top:16px;">Does this architecture make sense? Any questions before I move to the UI design section?</p>
