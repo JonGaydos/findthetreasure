@@ -70,14 +70,17 @@ export function useGameState() {
     setState((prev) => {
       const next = { ...prev, ...updates };
       const ls = localStorage;
+
       if ('shareCode' in updates) {
-        ls.setItem(KEYS.shareCode, updates.shareCode ?? '');
+        updates.shareCode != null
+          ? ls.setItem(KEYS.shareCode, updates.shareCode)
+          : ls.removeItem(KEYS.shareCode);
       }
       if ('guesses' in updates) {
         ls.setItem(KEYS.guesses, JSON.stringify(updates.guesses));
       }
-      if ('unit' in updates) {
-        ls.setItem(KEYS.unit, updates.unit!);
+      if ('unit' in updates && updates.unit != null) {
+        ls.setItem(KEYS.unit, updates.unit);
       }
       if ('circlesVisible' in updates) {
         ls.setItem(KEYS.circlesVisible, String(updates.circlesVisible));
@@ -86,17 +89,26 @@ export function useGameState() {
         ls.setItem(KEYS.hintUnlocked, String(updates.hintUnlocked));
       }
       if ('hint' in updates) {
-        ls.setItem(KEYS.hint, updates.hint ?? '');
+        updates.hint != null
+          ? ls.setItem(KEYS.hint, updates.hint)
+          : ls.removeItem(KEYS.hint);
       }
       if ('gameOver' in updates) {
-        ls.setItem(KEYS.gameOver, updates.gameOver ?? '');
+        updates.gameOver != null
+          ? ls.setItem(KEYS.gameOver, updates.gameOver)
+          : ls.removeItem(KEYS.gameOver);
       }
       if ('treasureLat' in updates) {
-        ls.setItem(KEYS.treasureLat, String(updates.treasureLat));
+        updates.treasureLat != null
+          ? ls.setItem(KEYS.treasureLat, String(updates.treasureLat))
+          : ls.removeItem(KEYS.treasureLat);
       }
       if ('treasureLng' in updates) {
-        ls.setItem(KEYS.treasureLng, String(updates.treasureLng));
+        updates.treasureLng != null
+          ? ls.setItem(KEYS.treasureLng, String(updates.treasureLng))
+          : ls.removeItem(KEYS.treasureLng);
       }
+
       return next;
     });
   }, []);

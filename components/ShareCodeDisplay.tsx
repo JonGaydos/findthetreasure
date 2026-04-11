@@ -16,7 +16,9 @@ export default function ShareCodeDisplay({ shareCode }: Props) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select the text manually
+      // Clipboard API unavailable (e.g., non-HTTPS context).
+      // The code text has `select-all` class so the user can copy manually.
+      setCopied(false);
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Map, Marker, Circle } from 'leaflet';
 import type { Guess, Unit } from '@/types/game';
 
@@ -44,6 +44,7 @@ export default function MapComponent({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const layersRef = useRef<(Marker | Circle)[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   // Initialise the Leaflet map once on mount
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function MapComponent({
       }
 
       mapRef.current = map;
+      setMapReady(true);  // ← signal that map is ready for re-draw
     })();
 
     return () => {
@@ -87,6 +89,7 @@ export default function MapComponent({
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        setMapReady(false);  // ← reset on cleanup
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,7 +153,7 @@ export default function MapComponent({
         }
       });
     })();
-  }, [hiderPin, guesses, showCircles, treasurePin]);
+  }, [hiderPin, guesses, showCircles, treasurePin, mapReady]);
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }

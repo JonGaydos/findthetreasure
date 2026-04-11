@@ -5,10 +5,10 @@ import { Label } from '@/components/ui/label';
 
 interface Props {
   checked: boolean;
-  onChange: (value: boolean) => void;
+  onCheckedChange: (value: boolean) => void;
 }
 
-export default function CircleToggle({ checked, onChange }: Props) {
+export default function CircleToggle({ checked, onCheckedChange }: Props) {
   return (
     <div className="flex items-center justify-between p-3 bg-slate-900 border border-slate-700 rounded-lg">
       <div>
@@ -20,7 +20,7 @@ export default function CircleToggle({ checked, onChange }: Props) {
       <Switch
         id="circle-toggle"
         checked={checked}
-        onCheckedChange={onChange}
+        onCheckedChange={onCheckedChange}
       />
     </div>
   );
