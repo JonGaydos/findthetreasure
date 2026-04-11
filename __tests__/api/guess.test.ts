@@ -81,3 +81,10 @@ test('returns 400 for missing fields', async () => {
   const res = await POST(req);
   expect(res.status).toBe(400);
 });
+
+test('returns 400 when guessCount is missing', async () => {
+  const shareCode = makeCode();
+  const req = makeRequest({ shareCode, guessLat: 40, guessLng: -74 });
+  const res = await POST(req);
+  expect(res.status).toBe(400);
+});

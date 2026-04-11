@@ -11,7 +11,10 @@ export async function POST(req: Request): Promise<Response> {
     if (
       typeof shareCode !== 'string' ||
       typeof guessLat !== 'number' ||
-      typeof guessLng !== 'number'
+      typeof guessLng !== 'number' ||
+      typeof guessCount !== 'number' ||
+      !Number.isInteger(guessCount) ||
+      guessCount < 0
     ) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
@@ -26,11 +29,9 @@ export async function POST(req: Request): Promise<Response> {
     const distanceMeters = haversineMeters(payload.a, payload.b, guessLat, guessLng);
     const isWin = distanceMeters <= payload.t;
 
-    const hintThreshold = payload.n;
     const isHintUnlocked =
-      typeof hintThreshold === 'number' &&
-      typeof guessCount === 'number' &&
-      guessCount >= hintThreshold &&
+      typeof payload.n === 'number' &&
+      guessCount >= payload.n &&
       typeof payload.h === 'string';
 
     const response: GuessResponse = {
