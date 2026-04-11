@@ -1,3 +1,5 @@
+// NOTE: Tailwind v4 uses CSS-first configuration. This file is a reference only.
+// Active configuration (dark mode, theme tokens) lives in app/globals.css.
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
