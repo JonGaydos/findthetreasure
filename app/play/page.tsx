@@ -103,12 +103,12 @@ export default function PlayPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shareCode: state.shareCode }),
       });
-      if (!res.ok) return;
+      if (!res.ok) { setShowGiveUpConfirm(false); return; }
       const data = await res.json();
       update({ gameOver: 'gave_up', treasureLat: data.lat, treasureLng: data.lng });
       setShowGiveUpConfirm(false);
     } catch {
-      // silently fail — user can try again
+      setShowGiveUpConfirm(false);
     } finally {
       setGuessing(false);
     }
