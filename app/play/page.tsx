@@ -68,6 +68,7 @@ export default function PlayPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ shareCode: state.shareCode }),
         });
+        if (!revealRes.ok) { update(updates); return; }
         const revealData = await revealRes.json();
         updates.gameOver = 'win';
         updates.treasureLat = revealData.lat;
@@ -78,6 +79,7 @@ export default function PlayPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ shareCode: state.shareCode }),
         });
+        if (!revealRes.ok) { update(updates); return; }
         const revealData = await revealRes.json();
         updates.gameOver = 'loss';
         updates.treasureLat = revealData.lat;
@@ -93,16 +95,24 @@ export default function PlayPage() {
   }, [state, update, guessing]);
 
   const handleGiveUp = useCallback(async () => {
-    if (!state.shareCode) return;
-    const res = await fetch('/api/reveal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shareCode: state.shareCode }),
-    });
-    const data = await res.json();
-    update({ gameOver: 'gave_up', treasureLat: data.lat, treasureLng: data.lng });
-    setShowGiveUpConfirm(false);
-  }, [state.shareCode, update]);
+    if (!state.shareCode || guessing) return;
+    setGuessing(true);
+    try {
+      const res = await fetch('/api/reveal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareCode: state.shareCode }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      update({ gameOver: 'gave_up', treasureLat: data.lat, treasureLng: data.lng });
+      setShowGiveUpConfirm(false);
+    } catch {
+      // silently fail — user can try again
+    } finally {
+      setGuessing(false);
+    }
+  }, [state.shareCode, update, guessing]);
 
   const handlePlayAgain = useCallback(() => {
     clearGame();
@@ -176,9 +186,11 @@ export default function PlayPage() {
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-3">
             <p className="text-slate-500 text-xs">Last guess</p>
             <p className={`text-2xl font-bold mt-1 ${
-              state.guesses.length >= 2 && lastGuess.distanceMeters < state.guesses[state.guesses.length - 2].distanceMeters
-                ? 'text-green-400'
-                : 'text-red-400'
+              state.guesses.length < 2
+                ? 'text-slate-200'
+                : lastGuess.distanceMeters < state.guesses[state.guesses.length - 2].distanceMeters
+                  ? 'text-green-400'
+                  : 'text-red-400'
             }`}>
               {formatDistance(lastGuess.distanceMeters, state.unit)}
             </p>

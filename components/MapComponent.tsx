@@ -44,7 +44,12 @@ export default function MapComponent({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const layersRef = useRef<(Marker | Circle)[]>([]);
+  const onMapClickRef = useRef(onMapClick);
   const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   // Initialise the Leaflet map once on mount
   useEffect(() => {
@@ -76,9 +81,7 @@ export default function MapComponent({
         maxZoom: 19,
       }).addTo(map);
 
-      if (onMapClick) {
-        map.on('click', (e) => onMapClick(e.latlng.lat, e.latlng.lng));
-      }
+      map.on('click', (e) => onMapClickRef.current?.(e.latlng.lat, e.latlng.lng));
 
       mapRef.current = map;
       setMapReady(true);  // ← signal that map is ready for re-draw
