@@ -63,7 +63,7 @@ export default function FindPage() {
             placeholder="FTT-..."
             value={code}
             onChange={e => { setCode(e.target.value); setError(null); }}
-            onKeyDown={e => e.key === 'Enter' && handleStart()}
+            onKeyDown={e => e.key === 'Enter' && !loading && code.trim() && handleStart()}
             className="bg-slate-900 border-blue-700 text-yellow-400 font-mono text-lg text-center placeholder:text-slate-600 placeholder:font-sans placeholder:text-sm tracking-wider"
             autoFocus
           />
