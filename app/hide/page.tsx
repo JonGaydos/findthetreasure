@@ -34,7 +34,7 @@ export default function HidePage() {
     setShareCode(null);
   }, []);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!pin) return;
     setLoading(true);
     setError(null);
@@ -63,7 +63,7 @@ export default function HidePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits]);
 
   return (
     <div className="flex h-screen bg-slate-950 overflow-hidden">
@@ -97,7 +97,11 @@ export default function HidePage() {
             {UNITS.map(u => (
               <button
                 key={u}
-                onClick={() => { setUnit(u); setToleranceValue(toleranceRange(u).min + Math.floor((toleranceRange(u).max - toleranceRange(u).min) * 0.05)); }}
+                onClick={() => {
+                  setUnit(u);
+                  const range = toleranceRange(u);
+                  setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
+                }}
                 className={`flex-1 py-1 rounded text-xs font-medium border transition-colors ${
                   unit === u
                     ? 'bg-blue-800 border-blue-600 text-blue-200'
@@ -120,7 +124,7 @@ export default function HidePage() {
             max={tolerRange.max}
             step={tolerRange.step}
             value={[toleranceValue]}
-            onValueChange={(vals) => setToleranceValue(Array.isArray(vals) ? vals[0] : vals)}
+            onValueChange={(vals) => setToleranceValue((vals as number[])[0])}
             className="w-full"
           />
           <div className="flex justify-between text-slate-600 text-xs mt-1">
@@ -152,7 +156,7 @@ export default function HidePage() {
                 max={53}
                 step={1}
                 value={[hintAfterGuesses]}
-                onValueChange={(vals) => setHintAfterGuesses(Array.isArray(vals) ? vals[0] : vals)}
+                onValueChange={(vals) => setHintAfterGuesses((vals as number[])[0])}
                 className="w-full"
               />
             </div>
