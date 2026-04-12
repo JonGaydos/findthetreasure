@@ -13,8 +13,8 @@ export default function FindPage() {
   const [loading, setLoading] = useState(false);
 
   const handleStart = async () => {
-    const trimmed = code.trim().toUpperCase();
-    if (!trimmed.startsWith('FTT-')) {
+    const trimmed = code.trim();
+    if (!trimmed.toUpperCase().startsWith('FTT-')) {
       setError('Invalid code. Share codes start with FTT-');
       return;
     }
