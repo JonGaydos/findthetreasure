@@ -62,7 +62,7 @@ export default function HidePage() {
   }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits, unit]);
 
   const panel = (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto h-full">
+    <div className="flex flex-col gap-4 p-4 min-h-full">
       <div className="flex items-center gap-2">
         <button onClick={() => router.push('/')} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
         <h1 className="text-white font-semibold">Hide a Treasure</h1>
@@ -161,7 +161,7 @@ export default function HidePage() {
   );
 
   const map = (
-    <div className="relative w-full h-full">
+    <div className="absolute inset-0">
       <MapComponent onMapClick={handleMapClick} hiderPin={pin} />
       {!pin && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-sm px-4 py-2 rounded-full border border-slate-700 pointer-events-none whitespace-nowrap">
@@ -200,15 +200,17 @@ export default function HidePage() {
           </button>
         </div>
         {/* Content */}
-        <div className="flex-1 min-h-0 bg-slate-950">
-          {mobileTab === 'map' ? map : panel}
+        <div className="flex-1 min-h-0 bg-slate-950 relative overflow-hidden">
+          {mobileTab === 'map' ? map : (
+            <div className="absolute inset-0 overflow-y-auto">{panel}</div>
+          )}
         </div>
       </div>
 
       {/* ── Desktop layout ── */}
       <div className="hidden md:flex h-screen bg-slate-950 overflow-hidden">
         <div className="flex-1 relative">{map}</div>
-        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto">{panel}</div>
+        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto h-full">{panel}</div>
       </div>
     </>
   );

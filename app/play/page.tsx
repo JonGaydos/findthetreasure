@@ -128,7 +128,7 @@ export default function PlayPage() {
   const lastGuess = state.guesses[state.guesses.length - 1] ?? null;
 
   const map = (
-    <div className="relative w-full h-full">
+    <div className="absolute inset-0">
       <MapComponent
         onMapClick={state.gameOver ? undefined : handleMapClick}
         guesses={state.guesses}
@@ -154,7 +154,7 @@ export default function PlayPage() {
   );
 
   const panel = (
-    <div className="flex flex-col gap-3 p-4 overflow-y-auto h-full">
+    <div className="flex flex-col gap-3 p-4 min-h-full">
       {/* Header */}
       <div>
         <h1 className="text-white font-semibold text-sm">Find The Treasure</h1>
@@ -308,15 +308,17 @@ export default function PlayPage() {
           </button>
         </div>
         {/* Content */}
-        <div className="flex-1 min-h-0 bg-slate-950">
-          {mobileTab === 'map' ? map : panel}
+        <div className="flex-1 min-h-0 bg-slate-950 relative overflow-hidden">
+          {mobileTab === 'map' ? map : (
+            <div className="absolute inset-0 overflow-y-auto">{panel}</div>
+          )}
         </div>
       </div>
 
       {/* ── Desktop layout ── */}
       <div className="hidden md:flex h-screen bg-slate-950 overflow-hidden">
         <div className="flex-1 relative">{map}</div>
-        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto">{panel}</div>
+        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto h-full">{panel}</div>
       </div>
     </>
   );
