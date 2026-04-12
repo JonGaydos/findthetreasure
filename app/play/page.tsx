@@ -9,7 +9,9 @@ import CircleToggle from '@/components/CircleToggle';
 import HintBanner from '@/components/HintBanner';
 import { formatDistance } from '@/lib/units';
 import { Button } from '@/components/ui/button';
-import type { Guess, GameOverReason } from '@/types/game';
+import type { Guess, GameOverReason, Unit } from '@/types/game';
+
+const UNITS: Unit[] = ['ft', 'm', 'mi', 'km'];
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
@@ -203,6 +205,26 @@ export default function PlayPage() {
           <p className="text-white text-lg font-bold">
             {state.guesses.length} <span className="text-slate-600 text-sm font-normal">/ {MAX_GUESSES}</span>
           </p>
+        </div>
+
+        {/* Unit selector */}
+        <div>
+          <p className="text-slate-500 text-xs uppercase tracking-wide mb-2">Display Units</p>
+          <div className="flex gap-2">
+            {UNITS.map(u => (
+              <button
+                key={u}
+                onClick={() => update({ unit: u })}
+                className={`flex-1 py-1 rounded text-xs font-medium border transition-colors ${
+                  state.unit === u
+                    ? 'bg-blue-800 border-blue-600 text-blue-200'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Circle toggle */}
