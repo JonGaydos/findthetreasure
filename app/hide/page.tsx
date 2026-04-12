@@ -25,6 +25,7 @@ export default function HidePage() {
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mobileTab, setMobileTab] = useState<'map' | 'options'>('map');
 
   const tolerUnits = toleranceUnit(unit);
   const tolerRange = toleranceRange(unit);
@@ -40,12 +41,7 @@ export default function HidePage() {
     setError(null);
     try {
       const toleranceMeters = unitToMeters(toleranceValue, tolerUnits);
-      const body: Record<string, unknown> = {
-        lat: pin.lat,
-        lng: pin.lng,
-        toleranceMeters,
-        unit,
-      };
+      const body: Record<string, unknown> = { lat: pin.lat, lng: pin.lng, toleranceMeters, unit };
       if (hint.trim()) {
         body.hint = hint.trim();
         body.hintAfterGuesses = hintAfterGuesses;
@@ -55,7 +51,7 @@ export default function HidePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('Failed to generate code');
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setShareCode(data.shareCode);
     } catch {
@@ -63,119 +59,157 @@ export default function HidePage() {
     } finally {
       setLoading(false);
     }
-  }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits]);
+  }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits, unit]);
+
+  const panel = (
+    <div className="flex flex-col gap-4 p-4 overflow-y-auto h-full">
+      <div className="flex items-center gap-2">
+        <button onClick={() => router.push('/')} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
+        <h1 className="text-white font-semibold">Hide a Treasure</h1>
+      </div>
+
+      {pin ? (
+        <p className="text-green-400 text-xs">📍 Pin placed: {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}</p>
+      ) : (
+        <p className="text-slate-500 text-xs">No pin placed yet — go to the Map tab and tap anywhere.</p>
+      )}
+
+      {/* Unit selector */}
+      <div>
+        <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">Distance Units</Label>
+        <div className="flex gap-2">
+          {UNITS.map(u => (
+            <button
+              key={u}
+              onClick={() => {
+                setUnit(u);
+                const range = toleranceRange(u);
+                setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
+              }}
+              className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+                unit === u
+                  ? 'bg-blue-800 border-blue-600 text-blue-200'
+                  : 'bg-slate-800 border-slate-700 text-slate-400'
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tolerance slider */}
+      <div>
+        <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
+          Win Tolerance: <span className="text-white">{toleranceValue} {tolerUnits}</span>
+        </Label>
+        <Slider
+          min={tolerRange.min}
+          max={tolerRange.max}
+          step={tolerRange.step}
+          value={[toleranceValue]}
+          onValueChange={vals => setToleranceValue(vals[0])}
+          className="w-full"
+        />
+        <div className="flex justify-between text-slate-600 text-xs mt-1">
+          <span>{tolerRange.min} {tolerUnits}</span>
+          <span>{tolerRange.max} {tolerUnits}</span>
+        </div>
+      </div>
+
+      {/* Hint */}
+      <div>
+        <Label htmlFor="hint" className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
+          Hint (optional)
+        </Label>
+        <Input
+          id="hint"
+          placeholder="Add a clue..."
+          value={hint}
+          onChange={e => setHint(e.target.value)}
+          className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-600 text-sm"
+        />
+        {hint.trim() && (
+          <div className="mt-2">
+            <Label htmlFor="hint-after" className="text-slate-400 text-xs mb-1 block">
+              Unlock after <span className="text-white">{hintAfterGuesses}</span> guesses
+            </Label>
+            <Slider
+              id="hint-after"
+              min={1}
+              max={53}
+              step={1}
+              value={[hintAfterGuesses]}
+              onValueChange={vals => setHintAfterGuesses(vals[0])}
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+
+      <Button
+        onClick={handleGenerate}
+        disabled={!pin || loading}
+        className="w-full bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-40"
+      >
+        {loading ? 'Generating...' : 'Generate Code ↗'}
+      </Button>
+
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {shareCode && <ShareCodeDisplay shareCode={shareCode} />}
+    </div>
+  );
+
+  const map = (
+    <div className="relative w-full h-full">
+      <MapComponent onMapClick={handleMapClick} hiderPin={pin} />
+      {!pin && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-sm px-4 py-2 rounded-full border border-slate-700 pointer-events-none whitespace-nowrap">
+          Tap anywhere to place the treasure
+        </div>
+      )}
+      {pin && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-900/90 text-green-300 text-sm px-4 py-2 rounded-full border border-green-700 pointer-events-none whitespace-nowrap">
+          ✓ Pin placed — go to Options to generate code
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col md:flex-row md:h-screen bg-slate-950 md:overflow-hidden">
-      {/* Map — fixed height on mobile, fills remaining space on desktop */}
-      <div className="h-[50vh] md:h-auto md:flex-1 relative isolate overflow-hidden">
-        <MapComponent onMapClick={handleMapClick} hiderPin={pin} />
-        {!pin && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-sm px-4 py-2 rounded-full border border-slate-700 pointer-events-none">
-            Click anywhere on the map to place the treasure
-          </div>
-        )}
+    <>
+      {/* ── Mobile layout ── */}
+      <div className="flex flex-col h-screen bg-slate-950 md:hidden">
+        {/* Tab bar */}
+        <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
+          <button
+            onClick={() => setMobileTab('map')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              mobileTab === 'map' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
+            }`}
+          >
+            🗺️ Map
+          </button>
+          <button
+            onClick={() => setMobileTab('options')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              mobileTab === 'options' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
+            }`}
+          >
+            ⚙️ Options {pin ? '✓' : ''}
+          </button>
+        </div>
+        {/* Content */}
+        <div className="flex-1 min-h-0 bg-slate-950">
+          {mobileTab === 'map' ? map : panel}
+        </div>
       </div>
 
-      {/* Right Panel — scrolls naturally on mobile, fixed sidebar on desktop */}
-      <div className="w-full md:w-72 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col gap-4 p-4 md:overflow-y-auto">
-        <div className="flex items-center gap-2">
-          <button onClick={() => router.push('/')} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
-          <h1 className="text-white font-semibold">Hide a Treasure</h1>
-        </div>
-
-        {pin && (
-          <p className="text-slate-500 text-xs">
-            Pin: {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
-          </p>
-        )}
-
-        {/* Unit selector */}
-        <div>
-          <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">Distance Units</Label>
-          <div className="flex gap-2">
-            {UNITS.map(u => (
-              <button
-                key={u}
-                onClick={() => {
-                  setUnit(u);
-                  const range = toleranceRange(u);
-                  setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
-                }}
-                className={`flex-1 py-1 rounded text-xs font-medium border transition-colors ${
-                  unit === u
-                    ? 'bg-blue-800 border-blue-600 text-blue-200'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tolerance slider */}
-        <div>
-          <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
-            Win Tolerance: <span className="text-white">{toleranceValue} {tolerUnits}</span>
-          </Label>
-          <Slider
-            min={tolerRange.min}
-            max={tolerRange.max}
-            step={tolerRange.step}
-            value={[toleranceValue]}
-            onValueChange={(vals) => setToleranceValue(vals[0])}
-            className="w-full"
-          />
-          <div className="flex justify-between text-slate-600 text-xs mt-1">
-            <span>{tolerRange.min} {tolerUnits}</span>
-            <span>{tolerRange.max} {tolerUnits}</span>
-          </div>
-        </div>
-
-        {/* Hint */}
-        <div>
-          <Label htmlFor="hint" className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
-            Hint (optional)
-          </Label>
-          <Input
-            id="hint"
-            placeholder="Add a clue..."
-            value={hint}
-            onChange={e => setHint(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-600 text-sm"
-          />
-          {hint.trim() && (
-            <div className="mt-2">
-              <Label htmlFor="hint-after" className="text-slate-400 text-xs mb-1 block">
-                Unlock after <span className="text-white">{hintAfterGuesses}</span> guesses
-              </Label>
-              <Slider
-                id="hint-after"
-                min={1}
-                max={53}
-                step={1}
-                value={[hintAfterGuesses]}
-                onValueChange={(vals) => setHintAfterGuesses(vals[0])}
-                className="w-full"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Generate button */}
-        <Button
-          onClick={handleGenerate}
-          disabled={!pin || loading}
-          className="w-full bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-40"
-        >
-          {loading ? 'Generating...' : 'Generate Code ↗'}
-        </Button>
-
-        {error && <p className="text-red-400 text-xs">{error}</p>}
-
-        {shareCode && <ShareCodeDisplay shareCode={shareCode} />}
+      {/* ── Desktop layout ── */}
+      <div className="hidden md:flex h-screen bg-slate-950 overflow-hidden">
+        <div className="flex-1 relative">{map}</div>
+        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto">{panel}</div>
       </div>
-    </div>
+    </>
   );
 }
