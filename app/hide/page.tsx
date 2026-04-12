@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,6 @@ export default function HidePage() {
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const tolerUnits = toleranceUnit(unit);
   const tolerRange = toleranceRange(unit);
@@ -122,16 +119,14 @@ export default function HidePage() {
           <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
             Win Tolerance: <span className="text-white">{toleranceValue} {tolerUnits}</span>
           </Label>
-          {mounted && (
-            <Slider
-              min={tolerRange.min}
-              max={tolerRange.max}
-              step={tolerRange.step}
-              value={[toleranceValue]}
-              onValueChange={(vals) => setToleranceValue((vals as number[])[0])}
-              className="w-full"
-            />
-          )}
+          <Slider
+            min={tolerRange.min}
+            max={tolerRange.max}
+            step={tolerRange.step}
+            value={[toleranceValue]}
+            onValueChange={(vals) => setToleranceValue(vals[0])}
+            className="w-full"
+          />
           <div className="flex justify-between text-slate-600 text-xs mt-1">
             <span>{tolerRange.min} {tolerUnits}</span>
             <span>{tolerRange.max} {tolerUnits}</span>
@@ -155,17 +150,15 @@ export default function HidePage() {
               <Label htmlFor="hint-after" className="text-slate-400 text-xs mb-1 block">
                 Unlock after <span className="text-white">{hintAfterGuesses}</span> guesses
               </Label>
-              {mounted && (
-                <Slider
-                  id="hint-after"
-                  min={1}
-                  max={53}
-                  step={1}
-                  value={[hintAfterGuesses]}
-                  onValueChange={(vals) => setHintAfterGuesses((vals as number[])[0])}
-                  className="w-full"
-                />
-              )}
+              <Slider
+                id="hint-after"
+                min={1}
+                max={53}
+                step={1}
+                value={[hintAfterGuesses]}
+                onValueChange={(vals) => setHintAfterGuesses(vals[0])}
+                className="w-full"
+              />
             </div>
           )}
         </div>

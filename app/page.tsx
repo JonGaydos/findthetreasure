@@ -1,12 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function HomePage() {
-  const router = useRouter();
   const [hasActiveGame, setHasActiveGame] = useState(false);
 
   useEffect(() => {
@@ -24,37 +21,32 @@ export default function HomePage() {
       </div>
 
       <div className="flex gap-4 w-full max-w-md">
-        <Card
-          className="flex-1 bg-slate-900 border-2 border-blue-700 hover:border-blue-500 cursor-pointer transition-colors"
-          onClick={() => router.push('/hide')}
+        <Link
+          href="/hide"
+          className="flex-1 flex flex-col items-center gap-3 p-6 text-center bg-slate-900 border-2 border-blue-700 hover:border-blue-500 active:border-blue-400 rounded-xl transition-colors"
         >
-          <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-            <span className="text-4xl">📦</span>
-            <h2 className="text-blue-300 font-semibold">Hide a Treasure</h2>
-            <p className="text-slate-500 text-xs">Pick a location &amp; share the code</p>
-          </CardContent>
-        </Card>
+          <span className="text-4xl">📦</span>
+          <span className="text-blue-300 font-semibold">Hide a Treasure</span>
+          <span className="text-slate-500 text-xs">Pick a location &amp; share the code</span>
+        </Link>
 
-        <Card
-          className="flex-1 bg-slate-900 border-2 border-green-700 hover:border-green-500 cursor-pointer transition-colors"
-          onClick={() => router.push('/find')}
+        <Link
+          href="/find"
+          className="flex-1 flex flex-col items-center gap-3 p-6 text-center bg-slate-900 border-2 border-green-700 hover:border-green-500 active:border-green-400 rounded-xl transition-colors"
         >
-          <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-            <span className="text-4xl">🔍</span>
-            <h2 className="text-green-300 font-semibold">Find a Treasure</h2>
-            <p className="text-slate-500 text-xs">Enter a code &amp; start searching</p>
-          </CardContent>
-        </Card>
+          <span className="text-4xl">🔍</span>
+          <span className="text-green-300 font-semibold">Find a Treasure</span>
+          <span className="text-slate-500 text-xs">Enter a code &amp; start searching</span>
+        </Link>
       </div>
 
       {hasActiveGame && (
-        <Button
-          variant="outline"
-          className="border-slate-600 text-slate-300 hover:text-white"
-          onClick={() => router.push('/play')}
+        <Link
+          href="/play"
+          className="px-4 py-2 rounded-md border border-slate-600 text-slate-300 hover:text-white text-sm transition-colors"
         >
           ▶ Resume Active Game
-        </Button>
+        </Link>
       )}
     </main>
   );
