@@ -68,7 +68,7 @@ export default function HidePage() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-slate-950 md:overflow-hidden">
       {/* Map — fixed height on mobile, fills remaining space on desktop */}
-      <div className="h-[50vh] md:h-auto md:flex-1 relative">
+      <div className="h-[50vh] md:h-auto md:flex-1 relative isolate overflow-hidden">
         <MapComponent onMapClick={handleMapClick} hiderPin={pin} />
         {!pin && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-sm px-4 py-2 rounded-full border border-slate-700 pointer-events-none">

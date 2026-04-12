@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import 'leaflet/dist/leaflet.css';
 import type { Map, Marker, Circle } from 'leaflet';
 import type { Guess, Unit } from '@/types/game';
 
@@ -59,8 +60,6 @@ export default function MapComponent({
 
     (async () => {
       const L = (await import('leaflet')).default;
-      // Leaflet CSS must be imported dynamically alongside the library
-      await import('leaflet/dist/leaflet.css');
 
       if (cancelled || !containerRef.current) return;
 

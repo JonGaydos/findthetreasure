@@ -129,7 +129,7 @@ export default function PlayPage() {
   return (
     <div className="flex flex-col md:flex-row md:h-screen bg-slate-950 md:overflow-hidden">
       {/* Map */}
-      <div className="h-[50vh] md:h-auto md:flex-1 relative">
+      <div className="h-[50vh] md:h-auto md:flex-1 relative isolate overflow-hidden">
         <MapComponent
           onMapClick={state.gameOver ? undefined : handleMapClick}
           guesses={state.guesses}
