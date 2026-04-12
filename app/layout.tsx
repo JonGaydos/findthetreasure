@@ -6,7 +6,17 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Find The Treasure',
-  description: 'A distance-only treasure hunt game',
+  description: 'A two-player distance-only treasure hunt. Hide a location, share a code, and let your friend find it with only distance as a clue.',
+  openGraph: {
+    title: 'Find The Treasure',
+    description: 'A two-player distance-only treasure hunt. Hide a location, share a code, and let your friend find it with only distance as a clue.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Find The Treasure',
+    description: 'A two-player distance-only treasure hunt. Hide a location, share a code, and let your friend find it with only distance as a clue.',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

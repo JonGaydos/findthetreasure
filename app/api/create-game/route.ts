@@ -21,6 +21,21 @@ export async function POST(req: Request): Promise<Response> {
       );
     }
 
+    if (
+      !Number.isFinite(lat) || lat < -90 || lat > 90 ||
+      !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+      !Number.isFinite(toleranceMeters) || toleranceMeters <= 0 || toleranceMeters > 50000
+    ) {
+      return NextResponse.json(
+        { error: 'Coordinates or tolerance out of range' },
+        { status: 400 },
+      );
+    }
+
+    if (typeof hint === 'string' && hint.length > 500) {
+      return NextResponse.json({ error: 'Hint must be 500 characters or fewer' }, { status: 400 });
+    }
+
     const payload: GamePayload = {
       a: lat,
       b: lng,

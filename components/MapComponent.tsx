@@ -75,9 +75,10 @@ export default function MapComponent({
 
       const map = L.map(containerRef.current).setView(center, zoom);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      const tileUrl = process.env.NEXT_PUBLIC_TILE_URL ?? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      const tileAttribution = process.env.NEXT_PUBLIC_TILE_ATTRIBUTION ?? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+      L.tileLayer(tileUrl, {
+        attribution: tileAttribution,
         maxZoom: 19,
       }).addTo(map);
 

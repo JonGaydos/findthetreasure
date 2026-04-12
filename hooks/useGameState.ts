@@ -54,7 +54,7 @@ export function useGameState() {
 
     setState({
       shareCode: shareCode || null,
-      guesses: guessesRaw ? (JSON.parse(guessesRaw) as Guess[]) : [],
+      guesses: (() => { try { return guessesRaw ? (JSON.parse(guessesRaw) as Guess[]) : []; } catch { return []; } })(),
       unit: unit ?? 'ft',
       circlesVisible: ls.getItem(KEYS.circlesVisible) !== 'false',
       hintUnlocked: ls.getItem(KEYS.hintUnlocked) === 'true',

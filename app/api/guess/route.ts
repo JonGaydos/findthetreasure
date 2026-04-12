@@ -14,9 +14,17 @@ export async function POST(req: Request): Promise<Response> {
       typeof guessLng !== 'number' ||
       typeof guessCount !== 'number' ||
       !Number.isInteger(guessCount) ||
-      guessCount < 0
+      guessCount < 0 ||
+      guessCount > 54
     ) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    }
+
+    if (
+      !Number.isFinite(guessLat) || guessLat < -90 || guessLat > 90 ||
+      !Number.isFinite(guessLng) || guessLng < -180 || guessLng > 180
+    ) {
+      return NextResponse.json({ error: 'Guess coordinates out of range' }, { status: 400 });
     }
 
     let payload;

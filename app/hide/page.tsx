@@ -69,9 +69,9 @@ export default function HidePage() {
   }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits]);
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
+    <div className="flex flex-col md:flex-row h-screen bg-slate-950 overflow-hidden">
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="flex-1 min-h-0 relative">
         <MapComponent onMapClick={handleMapClick} hiderPin={pin} />
         {!pin && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-sm px-4 py-2 rounded-full border border-slate-700 pointer-events-none">
@@ -81,7 +81,7 @@ export default function HidePage() {
       </div>
 
       {/* Right Panel */}
-      <div className="w-72 bg-slate-900 border-l border-slate-800 flex flex-col gap-4 p-4 overflow-y-auto">
+      <div className="w-full md:w-72 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col gap-4 p-4 overflow-y-auto max-h-64 md:max-h-none">
         <div className="flex items-center gap-2">
           <button onClick={() => router.push('/')} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
           <h1 className="text-white font-semibold">Hide a Treasure</h1>
