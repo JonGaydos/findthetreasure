@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { type ButtonHTMLAttributes } from "react"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all select-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [touch-action:manipulation]",
+  "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all select-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -33,10 +33,11 @@ interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {}
 
-function Button({ className, variant, size, ...props }: ButtonProps) {
+function Button({ className, variant, size, style, ...props }: ButtonProps) {
   return (
     <button
       className={cn(buttonVariants({ variant, size, className }))}
+      style={{ touchAction: 'manipulation', ...style }}
       {...props}
     />
   )

@@ -64,7 +64,7 @@ export default function HidePage() {
   const panel = (
     <div className="flex flex-col gap-4 p-4 min-h-full">
       <div className="flex items-center gap-2">
-        <button onClick={() => router.push('/')} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
+        <button onClick={() => router.push('/')} style={{ touchAction: 'manipulation' }} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
         <h1 className="text-white font-semibold">Hide a Treasure</h1>
       </div>
 
@@ -86,6 +86,7 @@ export default function HidePage() {
                 const range = toleranceRange(u);
                 setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
               }}
+              style={{ touchAction: 'manipulation' }}
               className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
                 unit === u
                   ? 'bg-blue-800 border-blue-600 text-blue-200'
@@ -184,6 +185,7 @@ export default function HidePage() {
         <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
           <button
             onClick={() => setMobileTab('map')}
+            style={{ touchAction: 'manipulation' }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               mobileTab === 'map' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
             }`}
@@ -192,6 +194,7 @@ export default function HidePage() {
           </button>
           <button
             onClick={() => setMobileTab('options')}
+            style={{ touchAction: 'manipulation' }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               mobileTab === 'options' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
             }`}
