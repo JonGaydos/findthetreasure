@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Map, Marker, Circle } from 'leaflet';
-import type { Guess, Unit } from '@/types/game';
+import type { Guess, Unit, CircleMode } from '@/types/game';
 
 interface Props {
   onMapClick?: (lat: number, lng: number) => void;
@@ -11,8 +11,8 @@ interface Props {
   hiderPin?: { lat: number; lng: number } | null;
   /** Seeker mode: all guesses placed so far */
   guesses?: Guess[];
-  /** Whether to draw distance-radius circles around each guess pin */
-  showCircles?: boolean;
+  /** Which guess circles to draw: 'off' | 'last' | 'all'. Defaults to 'off'. */
+  circleMode?: CircleMode;
   unit?: Unit;
   /** Revealed treasure location (shown on win/loss/give-up) */
   treasurePin?: { lat: number; lng: number } | null;
@@ -36,7 +36,7 @@ export default function MapComponent({
   onMapClick,
   hiderPin,
   guesses = [],
-  showCircles = true,
+  circleMode = 'off',
   unit: _unit,
   treasurePin,
   center = [20, 0],
@@ -143,7 +143,10 @@ export default function MapComponent({
         marker.bindPopup(`Guess #${guess.guessNumber}`);
         layersRef.current.push(marker);
 
-        if (showCircles && guess.distanceMeters > 0) {
+        const drawThisCircle =
+          circleMode === 'all' ||
+          (circleMode === 'last' && i === guesses.length - 1);
+        if (drawThisCircle && guess.distanceMeters > 0) {
           const circle = L.circle([guess.lat, guess.lng], {
             radius: guess.distanceMeters,
             color,
@@ -156,7 +159,7 @@ export default function MapComponent({
         }
       });
     })();
-  }, [hiderPin, guesses, showCircles, treasurePin, mapReady]);
+  }, [hiderPin, guesses, circleMode, treasurePin, mapReady]);
 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }

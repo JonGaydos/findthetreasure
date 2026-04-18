@@ -5,11 +5,11 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useGameState } from '@/hooks/useGameState';
 import GuessHistory from '@/components/GuessHistory';
-import CircleToggle from '@/components/CircleToggle';
+import CircleModeSelector from '@/components/CircleModeSelector';
 import HintBanner from '@/components/HintBanner';
 import { formatDistance } from '@/lib/units';
 import { Button } from '@/components/ui/button';
-import type { Guess, GameOverReason, Unit } from '@/types/game';
+import type { Guess, Unit } from '@/types/game';
 
 const UNITS: Unit[] = ['ft', 'm', 'mi', 'km'];
 
@@ -22,7 +22,6 @@ export default function PlayPage() {
   const { state, update, clearGame, hydrated } = useGameState();
   const [showGiveUpConfirm, setShowGiveUpConfirm] = useState(false);
   const [guessing, setGuessing] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'map' | 'panel'>('map');
 
   // Redirect if no active game
   useEffect(() => {
@@ -126,13 +125,22 @@ export default function PlayPage() {
 
   const guessesLeft = MAX_GUESSES - state.guesses.length;
   const lastGuess = state.guesses[state.guesses.length - 1] ?? null;
+  const prevGuess = state.guesses[state.guesses.length - 2] ?? null;
+  const lastDistanceClass =
+    !lastGuess
+      ? 'text-slate-200'
+      : !prevGuess
+        ? 'text-slate-200'
+        : lastGuess.distanceMeters < prevGuess.distanceMeters
+          ? 'text-green-400'
+          : 'text-red-400';
 
   const map = (
     <div className="absolute inset-0">
       <MapComponent
         onMapClick={state.gameOver ? undefined : handleMapClick}
         guesses={state.guesses}
-        showCircles={state.circlesVisible}
+        circleMode={state.circleMode}
         unit={state.unit}
         treasurePin={
           state.gameOver && state.treasureLat !== null && state.treasureLng !== null
@@ -154,62 +162,50 @@ export default function PlayPage() {
   );
 
   const panel = (
-    <div className="flex flex-col gap-3 p-4 min-h-full">
-      {/* Header */}
-      <div>
-        <h1 className="text-white font-semibold text-sm">Find The Treasure</h1>
-        {!state.gameOver && (
-          <p className="text-slate-500 text-xs">{guessesLeft} guess{guessesLeft !== 1 ? 'es' : ''} remaining</p>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-3">
+        {/* Header — title + guesses remaining on one line */}
+        <div className="flex items-baseline justify-between gap-2">
+          <h1 className="text-white font-semibold text-sm">Find The Treasure</h1>
+          {!state.gameOver && (
+            <span className="text-slate-500 text-[11px] tabular-nums">{guessesLeft} left</span>
+          )}
+        </div>
+
+        {/* Game-over banner */}
+        {state.gameOver === 'win' && (
+          <div className="bg-green-950 border border-green-700 rounded-lg p-3 text-center">
+            <p className="text-green-300 font-bold">🎉 You found it!</p>
+            <p className="text-green-500 text-xs mt-1">In {state.guesses.length} guess{state.guesses.length !== 1 ? 'es' : ''}</p>
+          </div>
         )}
-      </div>
+        {state.gameOver === 'loss' && (
+          <div className="bg-red-950 border border-red-800 rounded-lg p-3 text-center">
+            <p className="text-red-300 font-bold">😔 Out of guesses</p>
+            <p className="text-red-500 text-xs mt-1">Treasure revealed on map</p>
+          </div>
+        )}
+        {state.gameOver === 'gave_up' && (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 text-center">
+            <p className="text-slate-300 font-bold">🏳 You gave up</p>
+            <p className="text-slate-500 text-xs mt-1">Treasure revealed on map</p>
+          </div>
+        )}
 
-      {/* Game over banner */}
-      {state.gameOver === 'win' && (
-        <div className="bg-green-950 border border-green-700 rounded-lg p-3 text-center">
-          <p className="text-green-300 font-bold">🎉 You found it!</p>
-          <p className="text-green-500 text-xs mt-1">In {state.guesses.length} guess{state.guesses.length !== 1 ? 'es' : ''}</p>
-        </div>
-      )}
-      {state.gameOver === 'loss' && (
-        <div className="bg-red-950 border border-red-800 rounded-lg p-3 text-center">
-          <p className="text-red-300 font-bold">😔 Out of guesses</p>
-          <p className="text-red-500 text-xs mt-1">Treasure revealed on map</p>
-        </div>
-      )}
-      {state.gameOver === 'gave_up' && (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 text-center">
-          <p className="text-slate-300 font-bold">🏳 You gave up</p>
-          <p className="text-slate-500 text-xs mt-1">Treasure revealed on map</p>
-        </div>
-      )}
+        {/* Feedback — big last-distance value */}
+        {lastGuess && (
+          <div className="flex items-baseline justify-between gap-3 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2">
+            <span className="text-slate-500 text-[10px] uppercase tracking-wide shrink-0">Last</span>
+            <span className={`text-2xl font-bold tabular-nums ${lastDistanceClass}`}>
+              {formatDistance(lastGuess.distanceMeters, state.unit)}
+            </span>
+            <span className="text-slate-600 text-[10px] tabular-nums shrink-0">
+              {state.guesses.length}/{MAX_GUESSES}
+            </span>
+          </div>
+        )}
 
-      {/* Last distance */}
-      {lastGuess && (
-        <div className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-          <p className="text-slate-500 text-xs">Last guess</p>
-          <p className={`text-2xl font-bold mt-1 ${
-            state.guesses.length < 2
-              ? 'text-slate-200'
-              : lastGuess.distanceMeters < state.guesses[state.guesses.length - 2].distanceMeters
-                ? 'text-green-400'
-                : 'text-red-400'
-          }`}>
-            {formatDistance(lastGuess.distanceMeters, state.unit)}
-          </p>
-        </div>
-      )}
-
-      {/* Guess counter */}
-      <div className="bg-slate-950 border border-slate-800 rounded-lg p-3">
-        <p className="text-slate-500 text-xs">Guesses</p>
-        <p className="text-white text-lg font-bold">
-          {state.guesses.length} <span className="text-slate-600 text-sm font-normal">/ {MAX_GUESSES}</span>
-        </p>
-      </div>
-
-      {/* Unit selector */}
-      <div>
-        <p className="text-slate-500 text-xs uppercase tracking-wide mb-2">Display Units</p>
+        {/* Unit pills */}
         <div className="flex gap-2">
           {UNITS.map(u => (
             <button
@@ -225,100 +221,78 @@ export default function PlayPage() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Circle toggle */}
-      <CircleToggle
-        checked={state.circlesVisible}
-        onCheckedChange={v => update({ circlesVisible: v })}
-      />
+        {/* Circles tri-state selector */}
+        <CircleModeSelector
+          value={state.circleMode}
+          onChange={mode => update({ circleMode: mode })}
+        />
 
-      {/* Hint banner */}
-      {state.hintUnlocked && state.hint && <HintBanner hint={state.hint} />}
+        {/* Hint banner (conditional) */}
+        {state.hintUnlocked && state.hint && <HintBanner hint={state.hint} />}
 
-      {/* Guess history */}
-      <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex-1">
-        <p className="text-slate-500 text-xs uppercase tracking-wide mb-2">History</p>
-        <GuessHistory guesses={state.guesses} unit={state.unit} />
-      </div>
-
-      {/* Actions */}
-      {state.gameOver ? (
-        <Button
-          onClick={handlePlayAgain}
-          className="w-full bg-blue-700 hover:bg-blue-600 text-white"
-        >
-          Play Again
-        </Button>
-      ) : showGiveUpConfirm ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-slate-400 text-xs text-center">Reveal the treasure?</p>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleGiveUp}
-              variant="destructive"
-              size="sm"
-              className="flex-1"
-            >
-              Yes, give up
-            </Button>
-            <Button
-              onClick={() => setShowGiveUpConfirm(false)}
-              variant="outline"
-              size="sm"
-              className="flex-1 border-slate-600 text-slate-300"
-            >
-              Cancel
-            </Button>
-          </div>
+        {/* Guess history — scrollable list fills remaining space */}
+        <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 flex-1 min-h-[120px]">
+          <p className="text-slate-500 text-[10px] uppercase tracking-wide mb-2">History</p>
+          <GuessHistory guesses={state.guesses} unit={state.unit} />
         </div>
-      ) : (
-        <Button
-          onClick={() => setShowGiveUpConfirm(true)}
-          variant="outline"
-          className="w-full border-red-900 text-red-400 hover:bg-red-950 hover:text-red-300"
-        >
-          🏳 Give Up
-        </Button>
-      )}
+      </div>
+
+      {/* Sticky action area */}
+      <div className="shrink-0 p-3 pt-2 border-t border-slate-800/70 bg-slate-950">
+        {state.gameOver ? (
+          <Button
+            onClick={handlePlayAgain}
+            className="w-full bg-blue-700 hover:bg-blue-600 text-white"
+          >
+            Play Again
+          </Button>
+        ) : showGiveUpConfirm ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-slate-400 text-xs text-center">Reveal the treasure?</p>
+            <div className="flex gap-2">
+              <Button onClick={handleGiveUp} variant="destructive" size="sm" className="flex-1">
+                Yes, give up
+              </Button>
+              <Button
+                onClick={() => setShowGiveUpConfirm(false)}
+                variant="outline"
+                size="sm"
+                className="flex-1 border-slate-600 text-slate-300"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => setShowGiveUpConfirm(true)}
+            variant="outline"
+            className="w-full border-red-900 text-red-400 hover:bg-red-950 hover:text-red-300"
+          >
+            🏳 Give Up
+          </Button>
+        )}
+      </div>
     </div>
   );
 
   return (
     <>
-      {/* ── Mobile layout ── */}
+      {/* ── Mobile layout: sticky map top (~60vh), compact panel below ── */}
       <div className="flex flex-col h-screen bg-slate-950 md:hidden">
-        {/* Tab bar */}
-        <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
-          <button
-            onClick={() => setMobileTab('map')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              mobileTab === 'map' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
-            }`}
-          >
-            🗺️ Map
-          </button>
-          <button
-            onClick={() => setMobileTab('panel')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              mobileTab === 'panel' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
-            }`}
-          >
-            🎯 Game {state.guesses.length > 0 ? `(${state.guesses.length})` : ''}
-          </button>
+        <div className="relative shrink-0" style={{ height: '60vh' }}>
+          {map}
         </div>
-        {/* Content */}
-        <div className="flex-1 min-h-0 bg-slate-950 relative overflow-hidden">
-          {mobileTab === 'map' ? map : (
-            <div className="absolute inset-0 overflow-y-auto">{panel}</div>
-          )}
+        <div className="flex-1 min-h-0 bg-slate-950 border-t border-slate-800">
+          {panel}
         </div>
       </div>
 
-      {/* ── Desktop layout ── */}
+      {/* ── Desktop layout: full-bleed map + right side panel ── */}
       <div className="hidden md:flex h-screen bg-slate-950 overflow-hidden">
         <div className="flex-1 relative">{map}</div>
-        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto h-full">{panel}</div>
+        <div className="w-72 bg-slate-900 border-l border-slate-800 h-full">{panel}</div>
       </div>
     </>
   );
