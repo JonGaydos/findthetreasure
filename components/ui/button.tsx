@@ -33,11 +33,10 @@ interface ButtonProps
   extends ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {}
 
-function Button({ className, variant, size, style, ...props }: ButtonProps) {
+function Button({ className, variant, size, ...props }: ButtonProps) {
   return (
     <button
       className={cn(buttonVariants({ variant, size, className }))}
-      style={{ touchAction: 'manipulation', ...style }}
       {...props}
     />
   )

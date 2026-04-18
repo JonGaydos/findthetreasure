@@ -215,7 +215,6 @@ export default function PlayPage() {
             <button
               key={u}
               onClick={() => update({ unit: u })}
-              style={{ touchAction: 'manipulation' }}
               className={`flex-1 py-1 rounded text-xs font-medium border transition-colors ${
                 state.unit === u
                   ? 'bg-blue-800 border-blue-600 text-blue-200'
@@ -293,7 +292,6 @@ export default function PlayPage() {
         <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
           <button
             onClick={() => setMobileTab('map')}
-            style={{ touchAction: 'manipulation' }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               mobileTab === 'map' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
             }`}
@@ -302,7 +300,6 @@ export default function PlayPage() {
           </button>
           <button
             onClick={() => setMobileTab('panel')}
-            style={{ touchAction: 'manipulation' }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               mobileTab === 'panel' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
             }`}
