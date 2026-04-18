@@ -74,8 +74,10 @@ export default function MapComponent({
 
       const map = L.map(containerRef.current).setView(center, zoom);
 
-      const tileUrl = process.env.NEXT_PUBLIC_TILE_URL ?? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-      const tileAttribution = process.env.NEXT_PUBLIC_TILE_ATTRIBUTION ?? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+      // Default: Esri World Imagery (satellite). OSM remains the fallback
+      // for contributors who set NEXT_PUBLIC_TILE_URL explicitly.
+      const tileUrl = process.env.NEXT_PUBLIC_TILE_URL ?? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      const tileAttribution = process.env.NEXT_PUBLIC_TILE_ATTRIBUTION ?? 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
       L.tileLayer(tileUrl, {
         attribution: tileAttribution,
         maxZoom: 19,
