@@ -1,5 +1,10 @@
 export type Unit = 'ft' | 'm' | 'mi' | 'km';
 export type GameOverReason = 'win' | 'loss' | 'gave_up';
+/** Distance-radius circle overlay visibility:
+ *  - 'off'  — no circles
+ *  - 'last' — draw circle around the most recent guess only
+ *  - 'all'  — draw circles around every guess */
+export type CircleMode = 'off' | 'last' | 'all';
 
 /** Compact payload stored inside the encrypted share code */
 export interface GamePayload {

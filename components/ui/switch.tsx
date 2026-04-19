@@ -17,7 +17,6 @@ function Switch({ checked, onCheckedChange, id, disabled, className, ...props }:
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onCheckedChange?.(!checked)}
-      style={{ touchAction: 'manipulation' }}
       className={cn(
         "relative inline-flex h-[18px] w-[32px] shrink-0 cursor-pointer rounded-full border border-transparent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
         checked ? "bg-primary" : "bg-slate-600",

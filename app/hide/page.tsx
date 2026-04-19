@@ -25,7 +25,6 @@ export default function HidePage() {
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mobileTab, setMobileTab] = useState<'map' | 'options'>('map');
 
   const tolerUnits = toleranceUnit(unit);
   const tolerRange = toleranceRange(unit);
@@ -61,22 +60,29 @@ export default function HidePage() {
     }
   }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits, unit]);
 
+  // Compact single-page panel. Used on both mobile (below the sticky map)
+  // and desktop (in the right-hand side panel). Rows scroll if content
+  // overflows; the Generate button stays pinned at the bottom.
   const panel = (
-    <div className="flex flex-col gap-4 p-4 min-h-full">
-      <div className="flex items-center gap-2">
-        <button onClick={() => router.push('/')} style={{ touchAction: 'manipulation' }} className="text-slate-500 hover:text-slate-300 text-sm">← Back</button>
-        <h1 className="text-white font-semibold">Hide a Treasure</h1>
-      </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-3">
+        {/* Header row — back, title, pin status on one line */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => router.push('/')}
+            className="text-slate-500 hover:text-slate-300 text-xs"
+          >
+            ← Back
+          </button>
+          <h1 className="text-white font-semibold text-sm">Hide</h1>
+          {pin ? (
+            <span className="text-green-400 text-[11px] tabular-nums">📍 placed</span>
+          ) : (
+            <span className="text-slate-500 text-[11px]">tap map</span>
+          )}
+        </div>
 
-      {pin ? (
-        <p className="text-green-400 text-xs">📍 Pin placed: {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}</p>
-      ) : (
-        <p className="text-slate-500 text-xs">No pin placed yet — go to the Map tab and tap anywhere.</p>
-      )}
-
-      {/* Unit selector */}
-      <div>
-        <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">Distance Units</Label>
+        {/* Unit pills — no separate label, pills are self-explanatory */}
         <div className="flex gap-2">
           {UNITS.map(u => (
             <button
@@ -86,8 +92,7 @@ export default function HidePage() {
                 const range = toleranceRange(u);
                 setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
               }}
-              style={{ touchAction: 'manipulation' }}
-              className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+              className={`flex-1 py-1.5 rounded text-sm font-medium border transition-colors ${
                 unit === u
                   ? 'bg-blue-800 border-blue-600 text-blue-200'
                   : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -97,67 +102,70 @@ export default function HidePage() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Tolerance slider */}
-      <div>
-        <Label className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
-          Win Tolerance: <span className="text-white">{toleranceValue} {tolerUnits}</span>
-        </Label>
-        <Slider
-          min={tolerRange.min}
-          max={tolerRange.max}
-          step={tolerRange.step}
-          value={[toleranceValue]}
-          onValueChange={vals => setToleranceValue(vals[0])}
-          className="w-full"
-        />
-        <div className="flex justify-between text-slate-600 text-xs mt-1">
-          <span>{tolerRange.min} {tolerUnits}</span>
-          <span>{tolerRange.max} {tolerUnits}</span>
+        {/* Tolerance — label, slider, value on one row */}
+        <div className="flex items-center gap-3">
+          <span className="text-slate-500 text-[10px] uppercase tracking-wide shrink-0">
+            Tolerance
+          </span>
+          <Slider
+            min={tolerRange.min}
+            max={tolerRange.max}
+            step={tolerRange.step}
+            value={[toleranceValue]}
+            onValueChange={vals => setToleranceValue(vals[0])}
+            className="flex-1"
+          />
+          <span className="text-white text-xs font-semibold shrink-0 tabular-nums min-w-[48px] text-right">
+            {toleranceValue}{tolerUnits}
+          </span>
         </div>
+
+        {/* Hint — just the input; sub-control appears after typing */}
+        <div>
+          <Input
+            id="hint"
+            placeholder="Add a hint (optional)…"
+            value={hint}
+            onChange={e => setHint(e.target.value)}
+            className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-600 text-sm"
+          />
+          {hint.trim() && (
+            <div className="mt-2 flex items-center gap-3">
+              <Label htmlFor="hint-after" className="text-slate-500 text-[10px] uppercase tracking-wide shrink-0">
+                Unlock after
+              </Label>
+              <Slider
+                id="hint-after"
+                min={1}
+                max={53}
+                step={1}
+                value={[hintAfterGuesses]}
+                onValueChange={vals => setHintAfterGuesses(vals[0])}
+                className="flex-1"
+              />
+              <span className="text-white text-xs font-semibold shrink-0 tabular-nums min-w-[44px] text-right">
+                {hintAfterGuesses} {hintAfterGuesses === 1 ? 'guess' : 'guesses'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Share code result */}
+        {shareCode && <ShareCodeDisplay shareCode={shareCode} />}
       </div>
 
-      {/* Hint */}
-      <div>
-        <Label htmlFor="hint" className="text-slate-400 text-xs uppercase tracking-wide mb-2 block">
-          Hint (optional)
-        </Label>
-        <Input
-          id="hint"
-          placeholder="Add a clue..."
-          value={hint}
-          onChange={e => setHint(e.target.value)}
-          className="bg-slate-800 border-slate-700 text-slate-200 placeholder:text-slate-600 text-sm"
-        />
-        {hint.trim() && (
-          <div className="mt-2">
-            <Label htmlFor="hint-after" className="text-slate-400 text-xs mb-1 block">
-              Unlock after <span className="text-white">{hintAfterGuesses}</span> guesses
-            </Label>
-            <Slider
-              id="hint-after"
-              min={1}
-              max={53}
-              step={1}
-              value={[hintAfterGuesses]}
-              onValueChange={vals => setHintAfterGuesses(vals[0])}
-              className="w-full"
-            />
-          </div>
-        )}
+      {/* Sticky action area */}
+      <div className="shrink-0 p-3 pt-2 border-t border-slate-800/70 bg-slate-950">
+        {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
+        <Button
+          onClick={handleGenerate}
+          disabled={!pin || loading}
+          className="w-full bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-40"
+        >
+          {loading ? 'Generating...' : 'Generate Code ↗'}
+        </Button>
       </div>
-
-      <Button
-        onClick={handleGenerate}
-        disabled={!pin || loading}
-        className="w-full bg-blue-700 hover:bg-blue-600 text-white disabled:opacity-40"
-      >
-        {loading ? 'Generating...' : 'Generate Code ↗'}
-      </Button>
-
-      {error && <p className="text-red-400 text-xs">{error}</p>}
-      {shareCode && <ShareCodeDisplay shareCode={shareCode} />}
     </div>
   );
 
@@ -171,7 +179,7 @@ export default function HidePage() {
       )}
       {pin && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-green-900/90 text-green-300 text-sm px-4 py-2 rounded-full border border-green-700 pointer-events-none whitespace-nowrap">
-          ✓ Pin placed — go to Options to generate code
+          ✓ Pin placed
         </div>
       )}
     </div>
@@ -179,41 +187,20 @@ export default function HidePage() {
 
   return (
     <>
-      {/* ── Mobile layout ── */}
+      {/* ── Mobile layout: sticky map top (~70vh), compact panel below ── */}
       <div className="flex flex-col h-screen bg-slate-950 md:hidden">
-        {/* Tab bar */}
-        <div className="flex border-b border-slate-800 bg-slate-900 shrink-0">
-          <button
-            onClick={() => setMobileTab('map')}
-            style={{ touchAction: 'manipulation' }}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              mobileTab === 'map' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
-            }`}
-          >
-            🗺️ Map
-          </button>
-          <button
-            onClick={() => setMobileTab('options')}
-            style={{ touchAction: 'manipulation' }}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              mobileTab === 'options' ? 'text-white border-b-2 border-blue-500' : 'text-slate-500'
-            }`}
-          >
-            ⚙️ Options {pin ? '✓' : ''}
-          </button>
+        <div className="relative shrink-0" style={{ height: '70vh' }}>
+          {map}
         </div>
-        {/* Content */}
-        <div className="flex-1 min-h-0 bg-slate-950 relative overflow-hidden">
-          {mobileTab === 'map' ? map : (
-            <div className="absolute inset-0 overflow-y-auto">{panel}</div>
-          )}
+        <div className="flex-1 min-h-0 bg-slate-950 border-t border-slate-800">
+          {panel}
         </div>
       </div>
 
-      {/* ── Desktop layout ── */}
+      {/* ── Desktop layout: full-bleed map + right side panel ── */}
       <div className="hidden md:flex h-screen bg-slate-950 overflow-hidden">
         <div className="flex-1 relative">{map}</div>
-        <div className="w-72 bg-slate-900 border-l border-slate-800 overflow-y-auto h-full">{panel}</div>
+        <div className="w-72 bg-slate-900 border-l border-slate-800 h-full">{panel}</div>
       </div>
     </>
   );

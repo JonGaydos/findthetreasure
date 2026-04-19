@@ -14,7 +14,7 @@ export default function FindPage() {
   const [practicing, setPracticing] = useState(false);
 
   const clearAndStart = (shareCode: string) => {
-    const keys = ['ftt_shareCode','ftt_guesses','ftt_unit','ftt_circlesVisible','ftt_hintUnlocked','ftt_hint','ftt_gameOver','ftt_treasureLat','ftt_treasureLng'];
+    const keys = ['ftt_shareCode','ftt_guesses','ftt_unit','ftt_circleMode','ftt_circlesVisible','ftt_hintUnlocked','ftt_hint','ftt_gameOver','ftt_treasureLat','ftt_treasureLng'];
     keys.forEach(k => localStorage.removeItem(k));
     localStorage.setItem('ftt_shareCode', shareCode);
     router.push('/play');
