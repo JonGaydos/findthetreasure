@@ -8,26 +8,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import ShareCodeDisplay from '@/components/ShareCodeDisplay';
-import { unitToMeters, toleranceUnit, toleranceRange } from '@/lib/units';
+import { unitToMeters, toleranceRange } from '@/lib/units';
 import type { Unit } from '@/types/game';
 
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { ssr: false });
 
 const UNITS: Unit[] = ['ft', 'm', 'mi', 'km'];
 
+/** Pick a sensible starting tolerance for a given unit's range: ~5% of the
+ *  way from min to max, quantized to the range's step, with float drift
+ *  cleaned up via toFixed. */
+function defaultToleranceFor(unit: Unit): number {
+  const range = toleranceRange(unit);
+  const target = range.min + (range.max - range.min) * 0.05;
+  const quantized = Math.round(target / range.step) * range.step;
+  const decimals = range.step >= 1 ? 0 : 1;
+  return Number(quantized.toFixed(decimals));
+}
+
 export default function HidePage() {
   const router = useRouter();
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const [unit, setUnit] = useState<Unit>('ft');
-  const [toleranceValue, setToleranceValue] = useState(25);
+  const [toleranceValue, setToleranceValue] = useState(() => defaultToleranceFor('ft'));
   const [hint, setHint] = useState('');
   const [hintAfterGuesses, setHintAfterGuesses] = useState(20);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const tolerUnits = toleranceUnit(unit);
   const tolerRange = toleranceRange(unit);
+  const tolerDecimals = tolerRange.step >= 1 ? 0 : 1;
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setPin({ lat, lng });
@@ -39,7 +50,7 @@ export default function HidePage() {
     setLoading(true);
     setError(null);
     try {
-      const toleranceMeters = unitToMeters(toleranceValue, tolerUnits);
+      const toleranceMeters = unitToMeters(toleranceValue, unit);
       const body: Record<string, unknown> = { lat: pin.lat, lng: pin.lng, toleranceMeters, unit };
       if (hint.trim()) {
         body.hint = hint.trim();
@@ -58,7 +69,7 @@ export default function HidePage() {
     } finally {
       setLoading(false);
     }
-  }, [pin, hint, hintAfterGuesses, toleranceValue, tolerUnits, unit]);
+  }, [pin, hint, hintAfterGuesses, toleranceValue, unit]);
 
   // Compact single-page panel. Used on both mobile (below the sticky map)
   // and desktop (in the right-hand side panel). Rows scroll if content
@@ -89,8 +100,7 @@ export default function HidePage() {
               key={u}
               onClick={() => {
                 setUnit(u);
-                const range = toleranceRange(u);
-                setToleranceValue(range.min + Math.floor((range.max - range.min) * 0.05));
+                setToleranceValue(defaultToleranceFor(u));
               }}
               className={`flex-1 py-1.5 rounded text-sm font-medium border transition-colors ${
                 unit === u
@@ -116,8 +126,8 @@ export default function HidePage() {
             onValueChange={vals => setToleranceValue(vals[0])}
             className="flex-1"
           />
-          <span className="text-white text-xs font-semibold shrink-0 tabular-nums min-w-[48px] text-right">
-            {toleranceValue}{tolerUnits}
+          <span className="text-white text-xs font-semibold shrink-0 tabular-nums min-w-[56px] text-right">
+            {toleranceValue.toFixed(tolerDecimals)}{unit}
           </span>
         </div>
 

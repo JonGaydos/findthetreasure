@@ -23,13 +23,14 @@ export function formatDistance(meters: number, unit: Unit): string {
   return `${Math.round(value)} ${label}`;
 }
 
-/** Returns the small unit of the chosen system (ft for imperial, m for metric). */
-export function toleranceUnit(unit: Unit): 'ft' | 'm' {
-  return unit === 'ft' || unit === 'mi' ? 'ft' : 'm';
-}
-
-/** Slider range for tolerance, always in the small unit of the chosen system. */
+/** Slider range for tolerance, in the Hider's chosen unit. Each unit has a
+ *  range sized to its scale — ft/m are fine-grain for backyard/park games,
+ *  mi/km are coarser-grain (0.1 step) for neighborhood/regional games. */
 export function toleranceRange(unit: Unit): { min: number; max: number; step: number } {
-  if (unit === 'ft' || unit === 'mi') return { min: 1, max: 500, step: 1 };
-  return { min: 1, max: 150, step: 1 };
+  switch (unit) {
+    case 'ft': return { min: 1, max: 500, step: 1 };
+    case 'm':  return { min: 1, max: 150, step: 1 };
+    case 'mi': return { min: 0.1, max: 10, step: 0.1 };
+    case 'km': return { min: 0.1, max: 15, step: 0.1 };
+  }
 }
