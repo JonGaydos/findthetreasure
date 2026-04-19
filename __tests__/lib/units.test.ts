@@ -1,4 +1,4 @@
-import { metersToUnit, unitToMeters, formatDistance, toleranceUnit, toleranceRange } from '@/lib/units';
+import { metersToUnit, unitToMeters, formatDistance, toleranceRange } from '@/lib/units';
 
 test('metersToUnit: 1 m = 3.28084 ft', () => {
   expect(metersToUnit(1, 'ft')).toBeCloseTo(3.28084, 4);
@@ -28,20 +28,18 @@ test('formatDistance: large value rounds', () => {
   expect(formatDistance(5000, 'm')).toBe('5000 m');
 });
 
-test('toleranceUnit: ft for imperial units', () => {
-  expect(toleranceUnit('ft')).toBe('ft');
-  expect(toleranceUnit('mi')).toBe('ft');
-});
-
-test('toleranceUnit: m for metric units', () => {
-  expect(toleranceUnit('m')).toBe('m');
-  expect(toleranceUnit('km')).toBe('m');
-});
-
-test('toleranceRange: ft range is 1–500', () => {
+test('toleranceRange: ft range is 1–500 ft, step 1', () => {
   expect(toleranceRange('ft')).toEqual({ min: 1, max: 500, step: 1 });
 });
 
-test('toleranceRange: m range is 1–150', () => {
-  expect(toleranceRange('km')).toEqual({ min: 1, max: 150, step: 1 });
+test('toleranceRange: m range is 1–150 m, step 1', () => {
+  expect(toleranceRange('m')).toEqual({ min: 1, max: 150, step: 1 });
+});
+
+test('toleranceRange: mi range is 0.1–10 mi, step 0.1', () => {
+  expect(toleranceRange('mi')).toEqual({ min: 0.1, max: 10, step: 0.1 });
+});
+
+test('toleranceRange: km range is 0.1–15 km, step 0.1', () => {
+  expect(toleranceRange('km')).toEqual({ min: 0.1, max: 15, step: 0.1 });
 });
