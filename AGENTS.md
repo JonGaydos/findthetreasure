@@ -29,13 +29,15 @@ The app targets desktop and mobile browsers. Mobile regressions are the single m
 Run end-to-end on both desktop (≥1280px wide) and a real phone:
 
 - [ ] Home `/` loads; "Hide a Treasure" and "Find a Treasure" cards navigate correctly.
-- [ ] `/hide` — on mobile, the map is pinned to the top (~70% of viewport) and the compact panel fills the rest: pin status inline in the header ("📍 placed" when a pin is set), unit pills respond, tolerance slider drags and updates the inline `{value}{unit}` readout, hint input works (sub-slider appears after typing), Generate Code button produces a share code.
+- [ ] **Globe render** — on `/hide` and `/play`, at initial zoom the map shows a visibly curved 3D globe (sphere projection, Esri satellite imagery painted on it). Zooming in past ~zoom 5–6 smoothly flattens to a regular Mercator map; zooming back out re-forms the globe.
+- [ ] `/hide` — on mobile, the map is pinned to the top (~70% of viewport) and the compact panel fills the rest: pin status inline in the header ("📍 placed" when a pin is set), unit pills respond (including `mi` and `km` with appropriate per-unit ranges), tolerance slider drags and updates the inline `{value}{unit}` readout, hint input works (sub-slider appears after typing), Generate Code button produces a share code.
 - [ ] `/find` — code input accepts text, "Start Hunting" validates and navigates to `/play`, "Practice with Random Location" starts a solo game.
 - [ ] `/play` — on mobile, the map is pinned to the top (~60% of viewport) and the scrollable panel below shows: title + `N left`, big last-distance value (green when closer than previous, red when farther), unit pills, **Circles `[Off] [Last] [All]`** segmented selector, history list, sticky Give Up at the bottom. Tapping the map registers a guess.
+- [ ] **Wrap / date-line test** — rotate the globe so the International Date Line is visible on one side; tap there to place a guess or pin. Guess registers correctly, no 400 "out of range" errors in DevTools network tab.
 - [ ] **Circles selector behavior** — cycle `Off → Last → All` and confirm: `Off` hides all circles, `Last` shows only the most recent guess's circle, `All` shows every guess's circle. Selection persists across page reloads (stored in `localStorage` under `ftt_circleMode`).
 - [ ] **Legacy circle migration sanity check** — in DevTools console: `localStorage.setItem('ftt_circlesVisible','true'); localStorage.removeItem('ftt_circleMode');` then reload `/play` — selector should show `All` and `ftt_circlesVisible` should be gone (replaced by `ftt_circleMode=all`).
 - [ ] Resizing the desktop viewport across the `md` breakpoint toggles between the side-panel layout and the single-page mobile layout without breaking either. No tab bar is rendered at any width.
-- [ ] `npm run lint` and `npm test` pass (baseline: 8 pre-existing lint problems in `hooks/useGameState.ts`).
+- [ ] `npm run lint` and `npm test` pass (baseline: 8 pre-existing lint problems in `hooks/useGameState.ts`; tests: 51+ green including geodesic-circle helper coverage).
 - [ ] `npm run build && npm start` — the production build behaves the same on both form factors.
 
 If any step fails, capture: exact URL, device + browser + version, and DevTools console output. For Android Chrome: `chrome://inspect` from the desktop with the phone on USB. For iOS Safari: Safari → Preferences → Advanced → Show Develop menu, then connect via Lightning/USB-C.

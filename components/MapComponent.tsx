@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import 'leaflet/dist/leaflet.css';
-import type { Map, Marker, Circle } from 'leaflet';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import type { Map as MLMap, Marker as MLMarker, GeoJSONSource } from 'maplibre-gl';
 import type { Guess, Unit, CircleMode } from '@/types/game';
+import { geodesicCircle } from '@/lib/geo';
 
 interface Props {
   onMapClick?: (lat: number, lng: number) => void;
@@ -16,7 +17,8 @@ interface Props {
   unit?: Unit;
   /** Revealed treasure location (shown on win/loss/give-up) */
   treasurePin?: { lat: number; lng: number } | null;
-  /** Initial map center [lat, lng]. Defaults to [20, 0] (world view). */
+  /** Initial map center [lng, lat] — MapLibre's coordinate order. Defaults to
+   *  [0, 20] (whole-globe world view centered near the equator). */
   center?: [number, number];
   /** Initial zoom level. Defaults to 2. */
   zoom?: number;
@@ -32,6 +34,31 @@ function guessColor(index: number, total: number): string {
   return COLORS[colorIndex];
 }
 
+function makeGuessPinEl(guess: Guess, color: string): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText = `background:${color};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid rgba(255,255,255,0.8);box-shadow:0 1px 3px rgba(0,0,0,0.6);cursor:pointer;`;
+  el.textContent = String(guess.guessNumber);
+  return el;
+}
+
+function makeTreasurePinEl(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText = 'font-size:24px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));cursor:pointer;';
+  el.textContent = '⭐';
+  return el;
+}
+
+function makeHiderPinEl(): HTMLDivElement {
+  const el = document.createElement('div');
+  // Simple blue circle — matches the Hider's single treasure pin visual role
+  el.style.cssText = 'width:18px;height:18px;border-radius:50%;background:#2563eb;border:2px solid rgba(255,255,255,0.9);box-shadow:0 1px 3px rgba(0,0,0,0.5);cursor:pointer;';
+  return el;
+}
+
+const CIRCLES_SOURCE = 'guess-circles';
+const CIRCLES_FILL = 'guess-circles-fill';
+const CIRCLES_LINE = 'guess-circles-line';
+
 export default function MapComponent({
   onMapClick,
   hiderPin,
@@ -39,12 +66,12 @@ export default function MapComponent({
   circleMode = 'off',
   unit: _unit,
   treasurePin,
-  center = [20, 0],
+  center = [0, 20],
   zoom = 2,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<Map | null>(null);
-  const layersRef = useRef<(Marker | Circle)[]>([]);
+  const mapRef = useRef<MLMap | null>(null);
+  const markersRef = useRef<MLMarker[]>([]);
   const onMapClickRef = useRef(onMapClick);
   const [mapReady, setMapReady] = useState(false);
 
@@ -52,49 +79,94 @@ export default function MapComponent({
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
 
-  // Initialise the Leaflet map once on mount
+  // Initialise the MapLibre GL map once on mount
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     let cancelled = false;
 
     (async () => {
-      const L = (await import('leaflet')).default;
-
+      const maplibregl = (await import('maplibre-gl')).default;
       if (cancelled || !containerRef.current) return;
 
-      // Fix webpack/Next.js asset path for default marker icons
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconUrl: '/leaflet/marker-icon.png',
-        iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-        shadowUrl: '/leaflet/marker-shadow.png',
+      const tileUrl =
+        process.env.NEXT_PUBLIC_TILE_URL ??
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+      const tileAttribution =
+        process.env.NEXT_PUBLIC_TILE_ATTRIBUTION ??
+        'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
+      const map = new maplibregl.Map({
+        container: containerRef.current,
+        style: {
+          version: 8,
+          // 3D globe projection — auto-flattens to Mercator past ~zoom 6.
+          projection: { type: 'globe' },
+          sources: {
+            satellite: {
+              type: 'raster',
+              tiles: [tileUrl],
+              tileSize: 256,
+              attribution: tileAttribution,
+            },
+          },
+          layers: [
+            { id: 'satellite-layer', type: 'raster', source: 'satellite' },
+          ],
+        },
+        center,
+        zoom,
+        minZoom: 0,
+        maxZoom: 18,
+        attributionControl: { compact: true },
       });
 
-      const map = L.map(containerRef.current).setView(center, zoom);
+      map.on('click', (e) => {
+        onMapClickRef.current?.(e.lngLat.lat, e.lngLat.lng);
+      });
 
-      // Default: Esri World Imagery (satellite). OSM remains the fallback
-      // for contributors who set NEXT_PUBLIC_TILE_URL explicitly.
-      const tileUrl = process.env.NEXT_PUBLIC_TILE_URL ?? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      const tileAttribution = process.env.NEXT_PUBLIC_TILE_ATTRIBUTION ?? 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
-      L.tileLayer(tileUrl, {
-        attribution: tileAttribution,
-        maxZoom: 19,
-      }).addTo(map);
+      map.on('load', () => {
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
 
-      map.on('click', (e) => onMapClickRef.current?.(e.latlng.lat, e.latlng.lng));
+        // Empty GeoJSON source; real features set per prop change in the
+        // redraw effect below.
+        map.addSource(CIRCLES_SOURCE, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+        map.addLayer({
+          id: CIRCLES_FILL,
+          type: 'fill',
+          source: CIRCLES_SOURCE,
+          paint: {
+            'fill-color': ['get', 'color'],
+            'fill-opacity': 0.04,
+          },
+        });
+        map.addLayer({
+          id: CIRCLES_LINE,
+          type: 'line',
+          source: CIRCLES_SOURCE,
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-opacity': 0.6,
+            'line-width': 1.5,
+          },
+        });
 
-      mapRef.current = map;
-      setMapReady(true);  // ← signal that map is ready for re-draw
+        mapRef.current = map;
+        setMapReady(true);
+      });
     })();
 
     return () => {
       cancelled = true;
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        setMapReady(false);  // ← reset on cleanup
+        setMapReady(false);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,63 +175,67 @@ export default function MapComponent({
   // Re-draw all pins and circles whenever data props change
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
-    // Remove all previously drawn layers
-    layersRef.current.forEach((l) => l.remove());
-    layersRef.current = [];
+    // Remove all previously drawn markers
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
 
     (async () => {
-      const L = (await import('leaflet')).default;
+      const maplibregl = (await import('maplibre-gl')).default;
 
-      // Hider pin (standard blue marker)
+      // Hider pin (single blue dot)
       if (hiderPin) {
-        const marker = L.marker([hiderPin.lat, hiderPin.lng]).addTo(map);
-        marker.bindPopup('Treasure placed here');
-        layersRef.current.push(marker);
+        const marker = new maplibregl.Marker({ element: makeHiderPinEl(), anchor: 'center' })
+          .setLngLat([hiderPin.lng, hiderPin.lat])
+          .setPopup(new maplibregl.Popup({ offset: 14 }).setText('Treasure placed here'))
+          .addTo(map);
+        markersRef.current.push(marker);
       }
 
-      // Treasure revealed pin (gold star emoji icon)
+      // Treasure revealed pin (gold star)
       if (treasurePin) {
-        const goldIcon = L.divIcon({
-          html: '<div style="font-size:24px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));">⭐</div>',
-          className: '',
-          iconAnchor: [12, 12],
-        });
-        const marker = L.marker([treasurePin.lat, treasurePin.lng], { icon: goldIcon }).addTo(map);
-        marker.bindPopup('The treasure was here!');
-        layersRef.current.push(marker);
-        map.panTo([treasurePin.lat, treasurePin.lng]);
+        const marker = new maplibregl.Marker({ element: makeTreasurePinEl(), anchor: 'center' })
+          .setLngLat([treasurePin.lng, treasurePin.lat])
+          .setPopup(new maplibregl.Popup({ offset: 16 }).setText('The treasure was here!'))
+          .addTo(map);
+        markersRef.current.push(marker);
+        map.panTo([treasurePin.lng, treasurePin.lat]);
       }
 
-      // Guess pins (numbered, color-ramp from red to green)
+      // Guess pins + circle polygons
       const total = guesses.length;
+      const circleFeatures: GeoJSON.Feature[] = [];
+
       guesses.forEach((guess, i) => {
         const color = guessColor(i, total);
-        const icon = L.divIcon({
-          html: `<div style="background:${color};color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid rgba(255,255,255,0.8);box-shadow:0 1px 3px rgba(0,0,0,0.6);">${guess.guessNumber}</div>`,
-          className: '',
-          iconAnchor: [11, 11],
-        });
-        const marker = L.marker([guess.lat, guess.lng], { icon }).addTo(map);
-        marker.bindPopup(`Guess #${guess.guessNumber}`);
-        layersRef.current.push(marker);
+
+        const marker = new maplibregl.Marker({ element: makeGuessPinEl(guess, color), anchor: 'center' })
+          .setLngLat([guess.lng, guess.lat])
+          .setPopup(new maplibregl.Popup({ offset: 14 }).setText(`Guess #${guess.guessNumber}`))
+          .addTo(map);
+        markersRef.current.push(marker);
 
         const drawThisCircle =
           circleMode === 'all' ||
           (circleMode === 'last' && i === guesses.length - 1);
         if (drawThisCircle && guess.distanceMeters > 0) {
-          const circle = L.circle([guess.lat, guess.lng], {
-            radius: guess.distanceMeters,
-            color,
-            fillColor: color,
-            fillOpacity: 0.04,
-            weight: 1.5,
-            opacity: 0.6,
-          }).addTo(map);
-          layersRef.current.push(circle);
+          const feature = geodesicCircle([guess.lng, guess.lat], guess.distanceMeters);
+          circleFeatures.push({
+            ...feature,
+            properties: { color },
+          });
         }
       });
+
+      // Update the circle polygons source with the current set
+      const src = map.getSource(CIRCLES_SOURCE) as GeoJSONSource | undefined;
+      if (src) {
+        src.setData({
+          type: 'FeatureCollection',
+          features: circleFeatures,
+        });
+      }
     })();
   }, [hiderPin, guesses, circleMode, treasurePin, mapReady]);
 

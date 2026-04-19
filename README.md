@@ -16,7 +16,7 @@ Coordinates never leave the server — the share code carries an AES-256-GCM enc
 
 - [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + React 19 + TypeScript
 - Tailwind CSS 4 + a small set of shadcn/ui primitives
-- [Leaflet](https://leafletjs.com/) for the map, with [Esri World Imagery](https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer) satellite tiles as the default
+- [MapLibre GL JS](https://maplibre.org/) for the map (3D globe at low zoom, flat Mercator when zoomed in), with [Esri World Imagery](https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer) satellite tiles as the default
 - Node's built-in `crypto` (AES-256-GCM) for the share code payload
 - Jest + Testing Library for tests, Docker (standalone output) for deploys
 
@@ -46,7 +46,7 @@ All optional. Set in a `.env.local` file or your hosting platform's env config.
 | Variable | Default | Purpose |
 |---|---|---|
 | `FTT_SECRET` | *(required for prod)* | 32-byte hex string used to AES-encrypt share codes. Generate with `openssl rand -hex 32`. |
-| `NEXT_PUBLIC_TILE_URL` | Esri World Imagery (satellite) | Leaflet tile URL template. Swap for OSM, Mapbox, etc. without code changes. |
+| `NEXT_PUBLIC_TILE_URL` | Esri World Imagery (satellite) | Raster tile URL template. Swap for OSM, Mapbox, etc. without code changes. |
 | `NEXT_PUBLIC_TILE_ATTRIBUTION` | Esri credit string | Tile attribution shown in the map's lower-right. Must match your `TILE_URL`. |
 
 To get the classic OpenStreetMap street map back:
@@ -99,7 +99,7 @@ app/
   find/           Seeker code-entry screen + Practice launcher
   play/           Seeker game screen — map, guesses, circles, history
 components/
-  MapComponent.tsx         Leaflet wrapper (client-only, dynamic import)
+  MapComponent.tsx         MapLibre GL wrapper (client-only, dynamic import)
   CircleModeSelector.tsx   Tri-state circles: Off / Last / All
   GuessHistory.tsx         Scrollable list of past guesses
   HintBanner.tsx           Shown after N guesses when a hint was set
@@ -108,6 +108,7 @@ hooks/
   useGameState.ts          localStorage-backed game state + legacy migration
 lib/
   crypto.ts                AES-256-GCM encrypt/decrypt for share codes
+  geo.ts                   GeoJSON polygon approximation of a geographic circle
   haversine.ts             Great-circle distance
   units.ts                 ft/m/mi/km conversion + display formatting
 docs/specs/                Design specs for recent work
